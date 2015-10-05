@@ -145,10 +145,6 @@ Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 
 	newPosition = p0 + t0 + p1 + t1;
 
-
-	//std::cout << "useHermiteCurve call with " << nextPoint << " at time " << time << std::endl;
-	//newPosition = controlPoints[nextPoint+1].position;
-
 	// Return result
 	return newPosition;
 }
@@ -157,20 +153,95 @@ Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
 {
 	Point newPosition;
-
-	//================DELETE THIS PART AND THEN START CODING===================
-	static bool flag = false;
-	if (!flag)
-	{
-		std::cerr << "ERROR>>>>Member function useCatmullCurve is not implemented!" << std::endl;
-		flag = true;
-	}
-	//=========================================================================
-
-
+	float t, intervalTime;
+	
 	// Calculate time interval, and normal time required for later curve calculations
+	intervalTime = controlPoints[nextPoint].time - controlPoints[nextPoint - 1].time;
+	t = (time - controlPoints[nextPoint - 1].time) / intervalTime;
 
 	// Calculate position at t = time on Catmull-Rom curve
+	Point p0 = (2 * pow(t,3) - 3 * pow(t,2) + 1) * controlPoints[nextPoint-1].position;
+	Point p1 = (-2 * pow(t,3) + 3 * pow(t,2)) * controlPoints[nextPoint].position;
+
+	float b1, b2;
+	Vector a1, a2;
+	unsigned int nextPoint2 = nextPoint - 1;
+
+	// First Point
+	if (nextPoint2 == 0)
+	{
+		b1 = (controlPoints[2].time - controlPoints[0].time) / (controlPoints[2].time - controlPoints[1].time);
+
+		a1 = (controlPoints[1].position - controlPoints[0].position) / (controlPoints[1].time - controlPoints[0].time);
+
+		b2 = (controlPoints[0].time - controlPoints[1].time) / (controlPoints[2].time - controlPoints[1].time);
+
+		a2 = (controlPoints[2].position - controlPoints[0].position) / (controlPoints[2].time - controlPoints[0].time);
+	}
+	// Last Point
+	else if (nextPoint2 == controlPoints.size() - 1)
+	{
+		b1 = (controlPoints[nextPoint2].time-controlPoints[nextPoint2-2].time) / (controlPoints[nextPoint2-1].time-controlPoints[nextPoint2-2].time);
+
+		a1 = (controlPoints[nextPoint2].position - controlPoints[nextPoint2-1].position) / (controlPoints[nextPoint2].time - controlPoints[nextPoint2-1].time);
+
+		b2 = (controlPoints[nextPoint2-1].time-controlPoints[nextPoint2].time) / (controlPoints[nextPoint2-1].time-controlPoints[nextPoint2-2].time);
+
+		a2 = (controlPoints[nextPoint2].position - controlPoints[nextPoint2-2].position) / (controlPoints[nextPoint2].time - controlPoints[nextPoint2-2].time);
+	}
+	// Any Other Point
+	else
+	{
+		b1 = (controlPoints[nextPoint2].time - controlPoints[nextPoint2-1].time) / (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2-1].time);
+
+		a1 = (controlPoints[nextPoint2+1].position - controlPoints[nextPoint2].position) / (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2].time);
+
+		b2 = (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2].time) / (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2-1].time);
+
+		a2 = (controlPoints[nextPoint2].position - controlPoints[nextPoint2-1].position) / (controlPoints[nextPoint2].time - controlPoints[nextPoint2-1].time);
+	}
+
+	Vector t0 = (pow(t,3) - 2 * pow(t,2) + t) * intervalTime * (b1 * a1 + b2 * a2);
+
+
+	// First Point
+	if (nextPoint == 0)
+	{
+		b1 = (controlPoints[2].time - controlPoints[0].time) / (controlPoints[2].time - controlPoints[1].time);
+
+		a1 = (controlPoints[1].position - controlPoints[0].position) / (controlPoints[1].time - controlPoints[0].time);
+
+		b2 = (controlPoints[0].time - controlPoints[1].time) / (controlPoints[2].time - controlPoints[1].time);
+
+		a2 = (controlPoints[2].position - controlPoints[0].position) / (controlPoints[2].time - controlPoints[0].time);
+	}
+	// Last Point
+	else if (nextPoint == controlPoints.size() - 1)
+	{
+		b1 = (controlPoints[nextPoint].time-controlPoints[nextPoint-2].time) / (controlPoints[nextPoint-1].time-controlPoints[nextPoint-2].time);
+
+		a1 = (controlPoints[nextPoint].position - controlPoints[nextPoint-1].position) / (controlPoints[nextPoint].time - controlPoints[nextPoint-1].time);
+
+		b2 = (controlPoints[nextPoint-1].time-controlPoints[nextPoint].time) / (controlPoints[nextPoint-1].time-controlPoints[nextPoint-2].time);
+
+		a2 = (controlPoints[nextPoint].position - controlPoints[nextPoint-2].position) / (controlPoints[nextPoint].time - controlPoints[nextPoint-2].time);
+	}
+	// Any Other Point
+	else
+	{
+		b1 = (controlPoints[nextPoint].time - controlPoints[nextPoint-1].time) / (controlPoints[nextPoint+1].time - controlPoints[nextPoint-1].time);
+
+		a1 = (controlPoints[nextPoint+1].position - controlPoints[nextPoint].position) / (controlPoints[nextPoint+1].time - controlPoints[nextPoint].time);
+
+		b2 = (controlPoints[nextPoint+1].time - controlPoints[nextPoint].time) / (controlPoints[nextPoint+1].time - controlPoints[nextPoint-1].time);
+
+		a2 = (controlPoints[nextPoint].position - controlPoints[nextPoint-1].position) / (controlPoints[nextPoint].time - controlPoints[nextPoint-1].time);
+	}
+
+	Vector t1 = (pow(t,3) - pow(t,2)) * intervalTime * (b1 * a1 + b2 * a2);
+
+	newPosition = p0 + t0 + p1 + t1;
+
 
 	// Return result
 	return newPosition;
