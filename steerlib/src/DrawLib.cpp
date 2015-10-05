@@ -434,7 +434,16 @@ int DrawLib::_buildAgentDisplayList()
 			glRotatef(-90, 1, 0, 0);
 
 			// draw cylinder aligned w/ x axis
-			gluCylinder(_quadric, 1, 1, h, 32, 16);
+			//gluCylinder(_quadric, 1, 1, h, 32, 16);
+            //gluSphere(_quadric, 1, 1, h, 32, 16);
+    
+			gluCylinder(_quadric, .5, 0, .1, 32, 16);
+			gluCylinder(_quadric, 0, .5, .1, 32, 16);
+            gluCylinder(_quadric, .5, 0, .1, 32, 16);
+            gluCylinder(_quadric, 0, .5, .1, 32, 16);
+            gluCylinder(_quadric, .1, .1, .5, 12, 16);
+            gluCylinder(_quadric, 0, .8, .3, 12, 24);
+            
 			glTranslatef(0, 0, h);
 			gluDisk(_quadric, 0, 1, 32, 16);
 		}
@@ -462,7 +471,7 @@ int DrawLib::_buildAgentDisplayList()
 //
 int DrawLib::_buildAgentDotDisplayList()
 {
-	static const float h = .5;
+	static const float h = .8;
 
 	int dl = _startDefiningDisplayList();
 
@@ -515,7 +524,7 @@ int DrawLib::_buildFlagDisplayList()
 		glColor(Color(0.6f, 0.6f, 0.6f));
 		gluCylinder(_quadric, 0.05, 0.05, 1.1, 32, 1);
 		glTranslatef(0.0f,  0.0f, 1.1f);
-		gluSphere(_quadric, .07, 16, 16);
+		gluSphere(_quadric, .5, 16, 16);
 	}
 	glPopMatrix();
 
