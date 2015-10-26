@@ -73,7 +73,20 @@ bool timeSort(CurvePoint point1, CurvePoint point2)
 // Sort controlPoints vector in ascending order: min-first
 void Curve::sortControlPoints()
 {
+<<<<<<< HEAD
     std::sort(controlPoints.begin(),controlPoints.end(), timeSort);
+=======
+	//================DELETE THIS PART AND THEN START CODING===================
+	static bool flag = false;
+	if (!flag)
+	{
+		//std::cerr << "ERROR>>>>Member function sortControlPoints is not implemented!" << std::endl;
+		flag = true;
+	}
+	//=========================================================================
+
+	return;
+>>>>>>> upstream/master
 }
 
 // Calculate the position on curve corresponding to the given time, outputPoint is the resulting position
