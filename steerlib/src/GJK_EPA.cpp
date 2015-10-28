@@ -212,20 +212,26 @@ void SteerLib::GJK_EPA::epa(const std::vector<Util::Vector>& _shapeA, const std:
 
 void SteerLib::GJK_EPA::findNearestEdge(std::vector<Util::Vector> simplex, float& distance, Util::Vector& normal, int& index)
 {
+    Util::Vector current_point;
+    Util::Vector point_plus_one;
+    Util::Vector e;
+    Util::Vector n;
+    Util::Vector n_norm;
+
     distance = FLT_MAX;
-    
-    
-    for (int i = 0; i < simplex.size(); i++) {
-        int j = i + 1 == simplex.size() ? 0 : i + 1;
-        Util::Vector a = simplex[i];
-        Util::Vector b = simplex[j];
-        Util::Vector e = b - a;
-        Util::Vector oa = a;
-        Util::Vector n = tripleProduct(e, oa, e);
-        
-        Util::Vector n_norm = n / n.norm();
-        
-        double d = n_norm * a;
+
+    int count;
+    for (int count = 0; count < simplex.size(); count++) {
+        int j = count + 1 == simplex.size() ? 0 : count + 1;
+        current_point = simplex[count];
+        point_plus_one = simplex[j];
+
+        e = point_plus_one - current_point;
+        n = tripleProduct(e, current_point, e);
+        n_norm = n / n.norm();
+
+        double d = n_norm * current_point;
+
         if (d < distance) {
             distance = d;
             normal = n_norm;
