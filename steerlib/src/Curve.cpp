@@ -11,7 +11,6 @@
 #include <util/Color.h>
 #include <util/DrawLib.h>
 #include "Globals.h"
-#include <math.h>
 
 using namespace Util;
 
@@ -45,37 +44,27 @@ void Curve::addControlPoints(const std::vector<CurvePoint>& inputPoints)
 void Curve::drawCurve(Color curveColor, float curveThickness, int window)
 {
 #ifdef ENABLE_GUI
-    Point startPoint;
-    Point endPoint;
 
-    // Robustness: make sure there is at least two control point: start and end points
-    if (!checkRobust()) {return;}
+	//================DELETE THIS PART AND THEN START CODING===================
+	static bool flag = false;
+	if (!flag)
+	{
+		std::cerr << "ERROR>>>>Member function drawCurve is not implemented!" << std::endl;
+		flag = true;
+	}
+	//=========================================================================
 
-    // Move on the curve from t=0 to t=finalPoint, using window as step size, and linearly interpolate the curve points
-    if (!calculatePoint(startPoint, 0)) {return;}
+	// Robustness: make sure there is at least two control point: start and end points
 
-    for (int t = 1; t < controlPoints.back().time; t += window)
-    {
-        if (!calculatePoint(endPoint, t)) {return;}
-        DrawLib::drawLine(startPoint, endPoint, curveColor, curveThickness);
-        startPoint = endPoint;
-    }
-
+	// Move on the curve from t=0 to t=finalPoint, using window as step size, and linearly interpolate the curve points
+	
 	return;
 #endif
-}
-
-bool timeSort(CurvePoint point1, CurvePoint point2)
-{
-    return point1.time < point2.time;
 }
 
 // Sort controlPoints vector in ascending order: min-first
 void Curve::sortControlPoints()
 {
-<<<<<<< HEAD
-    std::sort(controlPoints.begin(),controlPoints.end(), timeSort);
-=======
 	//================DELETE THIS PART AND THEN START CODING===================
 	static bool flag = false;
 	if (!flag)
@@ -86,7 +75,6 @@ void Curve::sortControlPoints()
 	//=========================================================================
 
 	return;
->>>>>>> upstream/master
 }
 
 // Calculate the position on curve corresponding to the given time, outputPoint is the resulting position
@@ -121,42 +109,54 @@ bool Curve::calculatePoint(Point& outputPoint, float time)
 // Check Roboustness
 bool Curve::checkRobust()
 {
-    if (controlPoints.size() > 2) {return true;}
-	return false;
+	//================DELETE THIS PART AND THEN START CODING===================
+	static bool flag = false;
+	if (!flag)
+	{
+		std::cerr << "ERROR>>>>Member function checkRobust is not implemented!" << std::endl;
+		flag = true;
+	}
+	//=========================================================================
+
+
+	return true;
 }
 
 // Find the current time interval (i.e. index of the next control point to follow according to current time)
 bool Curve::findTimeInterval(unsigned int& nextPoint, float time)
 {
-	for (int i = 0; i < controlPoints.size(); i++)
+	//================DELETE THIS PART AND THEN START CODING===================
+	static bool flag = false;
+	if (!flag)
 	{
-        if (controlPoints[i].time > time)
-        {
-            nextPoint = i;
-            return true;
-        }
+		std::cerr << "ERROR>>>>Member function findTimeInterval is not implemented!" << std::endl;
+		flag = true;
 	}
+	//=========================================================================
 
-	return false;
+
+	return true;
 }
 
 // Implement Hermite curve
 Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 {
 	Point newPosition;
-	float t, intervalTime;
+	float normalTime, intervalTime;
+
+	//================DELETE THIS PART AND THEN START CODING===================
+	static bool flag = false;
+	if (!flag)
+	{
+		std::cerr << "ERROR>>>>Member function useHermiteCurve is not implemented!" << std::endl;
+		flag = true;
+	}
+	//=========================================================================
+
 
 	// Calculate time interval, and normal time required for later curve calculations
-	intervalTime = controlPoints[nextPoint].time - controlPoints[nextPoint - 1].time;
-	t = (time - controlPoints[nextPoint - 1].time) / intervalTime;
 
 	// Calculate position at t = time on Hermite curve
-	Point p0 = (2 * pow(t,3) - 3 * pow(t,2) + 1) * controlPoints[nextPoint-1].position;
-	Vector t0 = (pow(t,3) - 2 * pow(t,2) + t) * intervalTime * controlPoints[nextPoint-1].tangent;
-	Point p1 = (-2 * pow(t,3) + 3 * pow(t,2)) * controlPoints[nextPoint].position;
-	Vector t1 = (pow(t,3) - pow(t,2)) * intervalTime * controlPoints[nextPoint].tangent;
-
-	newPosition = p0 + t0 + p1 + t1;
 
 	// Return result
 	return newPosition;
@@ -166,96 +166,21 @@ Point Curve::useHermiteCurve(const unsigned int nextPoint, const float time)
 Point Curve::useCatmullCurve(const unsigned int nextPoint, const float time)
 {
 	Point newPosition;
-	float t, intervalTime;
-	
+
+	//================DELETE THIS PART AND THEN START CODING===================
+	static bool flag = false;
+	if (!flag)
+	{
+		std::cerr << "ERROR>>>>Member function useCatmullCurve is not implemented!" << std::endl;
+		flag = true;
+	}
+	//=========================================================================
+
+
 	// Calculate time interval, and normal time required for later curve calculations
-	intervalTime = controlPoints[nextPoint].time - controlPoints[nextPoint - 1].time;
-	t = (time - controlPoints[nextPoint - 1].time) / intervalTime;
 
 	// Calculate position at t = time on Catmull-Rom curve
-	Point p0 = (2 * pow(t,3) - 3 * pow(t,2) + 1) * controlPoints[nextPoint-1].position;
-	Point p1 = (-2 * pow(t,3) + 3 * pow(t,2)) * controlPoints[nextPoint].position;
-
-	float b1, b2;
-	Vector a1, a2;
-	unsigned int nextPoint2 = nextPoint - 1;
-
-	// First Point
-	if (nextPoint2 == 0)
-	{
-		b1 = (controlPoints[2].time - controlPoints[0].time) / (controlPoints[2].time - controlPoints[1].time);
-
-		a1 = (controlPoints[1].position - controlPoints[0].position) / (controlPoints[1].time - controlPoints[0].time);
-
-		b2 = (controlPoints[0].time - controlPoints[1].time) / (controlPoints[2].time - controlPoints[1].time);
-
-		a2 = (controlPoints[2].position - controlPoints[0].position) / (controlPoints[2].time - controlPoints[0].time);
-	}
-	// Last Point
-	else if (nextPoint2 == controlPoints.size() - 1)
-	{
-		b1 = (controlPoints[nextPoint2].time-controlPoints[nextPoint2-2].time) / (controlPoints[nextPoint2-1].time-controlPoints[nextPoint2-2].time);
-
-		a1 = (controlPoints[nextPoint2].position - controlPoints[nextPoint2-1].position) / (controlPoints[nextPoint2].time - controlPoints[nextPoint2-1].time);
-
-		b2 = (controlPoints[nextPoint2-1].time-controlPoints[nextPoint2].time) / (controlPoints[nextPoint2-1].time-controlPoints[nextPoint2-2].time);
-
-		a2 = (controlPoints[nextPoint2].position - controlPoints[nextPoint2-2].position) / (controlPoints[nextPoint2].time - controlPoints[nextPoint2-2].time);
-	}
-	// Any Other Point
-	else
-	{
-		b1 = (controlPoints[nextPoint2].time - controlPoints[nextPoint2-1].time) / (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2-1].time);
-
-		a1 = (controlPoints[nextPoint2+1].position - controlPoints[nextPoint2].position) / (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2].time);
-
-		b2 = (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2].time) / (controlPoints[nextPoint2+1].time - controlPoints[nextPoint2-1].time);
-
-		a2 = (controlPoints[nextPoint2].position - controlPoints[nextPoint2-1].position) / (controlPoints[nextPoint2].time - controlPoints[nextPoint2-1].time);
-	}
-
-	Vector t0 = (pow(t,3) - 2 * pow(t,2) + t) * intervalTime * (b1 * a1 + b2 * a2);
-
-
-	// First Point
-	if (nextPoint == 0)
-	{
-		b1 = (controlPoints[2].time - controlPoints[0].time) / (controlPoints[2].time - controlPoints[1].time);
-
-		a1 = (controlPoints[1].position - controlPoints[0].position) / (controlPoints[1].time - controlPoints[0].time);
-
-		b2 = (controlPoints[0].time - controlPoints[1].time) / (controlPoints[2].time - controlPoints[1].time);
-
-		a2 = (controlPoints[2].position - controlPoints[0].position) / (controlPoints[2].time - controlPoints[0].time);
-	}
-	// Last Point
-	else if (nextPoint == controlPoints.size() - 1)
-	{
-		b1 = (controlPoints[nextPoint].time-controlPoints[nextPoint-2].time) / (controlPoints[nextPoint-1].time-controlPoints[nextPoint-2].time);
-
-		a1 = (controlPoints[nextPoint].position - controlPoints[nextPoint-1].position) / (controlPoints[nextPoint].time - controlPoints[nextPoint-1].time);
-
-		b2 = (controlPoints[nextPoint-1].time-controlPoints[nextPoint].time) / (controlPoints[nextPoint-1].time-controlPoints[nextPoint-2].time);
-
-		a2 = (controlPoints[nextPoint].position - controlPoints[nextPoint-2].position) / (controlPoints[nextPoint].time - controlPoints[nextPoint-2].time);
-	}
-	// Any Other Point
-	else
-	{
-		b1 = (controlPoints[nextPoint].time - controlPoints[nextPoint-1].time) / (controlPoints[nextPoint+1].time - controlPoints[nextPoint-1].time);
-
-		a1 = (controlPoints[nextPoint+1].position - controlPoints[nextPoint].position) / (controlPoints[nextPoint+1].time - controlPoints[nextPoint].time);
-
-		b2 = (controlPoints[nextPoint+1].time - controlPoints[nextPoint].time) / (controlPoints[nextPoint+1].time - controlPoints[nextPoint-1].time);
-
-		a2 = (controlPoints[nextPoint].position - controlPoints[nextPoint-1].position) / (controlPoints[nextPoint].time - controlPoints[nextPoint-1].time);
-	}
-
-	Vector t1 = (pow(t,3) - pow(t,2)) * intervalTime * (b1 * a1 + b2 * a2);
-
-	newPosition = p0 + t0 + p1 + t1;
-
-
+	
 	// Return result
 	return newPosition;
 }
