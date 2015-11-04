@@ -237,9 +237,38 @@ std::pair<float, Util::Point> minimum_distance(Util::Point l1, Util::Point l2, U
 
 Util::Vector SocialForcesAgent::calcProximityForce(float dt)
 {
-    std::cerr<<"<<<calcProximityForce>>> Please Implement my body\n";
+    SteerLib::AgentInterface * tmp_agent;
+    SteerLib::ObstacleInterface * tmp_ob;
+    std::set<SteerLib::SpatialDatabaseItemPtr> _neighbors;
+    Util::Vector away = Util::Vector(0,0,0);
+    Util::Vector away_obs = Util::Vector(0,0,0);
 
-    return Util::Vector(0,0,0);
+    for (std::set<SteerLib::SpatialDatabaseItemPtr>::iterator neighbor = _neighbors.begin();
+         neighbor != _neighbors.end(); neighbor++)
+    {
+        if ((*neighbor)->isAgent())
+        {
+            tmp_agent = dynamic_cast<SteerLib::AgentInterface *>(*neighbor);
+
+            // Vector away from other agent
+            Util::Vector away_tmp = normalize(position() - tmp_agent->position());
+
+            away = away +
+                 (away_tmp * (_SocialForcesParams.sf_agent_a * exp((((this->radius() + tmp_agent->radius()) - (this->position() - tmp_agent->position()).length()) / _SocialForcesParams.sf_agent_b))));
+        }
+        else
+        {
+	    Util::Vector wall_normal = calcWallNormal(tmp_ob);
+            std::pair<Util::Point,Util::Point> line = calcWallPointsFromNormal(tmp_ob, wall_normal);
+            std::pair<float, Util::Point> min_stuff = minimum_distance(line.first, line.second, position());
+            Util::Vector away_obs_tmp = normalize(position() - min_stuff.second);
+
+            away_obs = away_obs +
+                     (away_obs * (_SocialForcesParams.sf_wall_a * exp((((this->radius()) - (this->position() - min_stuff.second).length()) / _SocialForcesParams.sf_wall_b))) * dt);
+        }
+    } 
+
+    return away;
 }
 
 
