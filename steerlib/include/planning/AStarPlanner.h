@@ -13,6 +13,7 @@
 #include <set>
 #include <map>
 #include "SteerLib.h"
+#include <limits.h>
 
 namespace SteerLib
 {
@@ -34,6 +35,13 @@ namespace SteerLib
 			double g;
 			Util::Point point;
 			AStarPlannerNode* parent;
+			float parentx=0 , parentz=0;
+			AStarPlannerNode()
+			{
+				f = DBL_MAX;
+				g = DBL_MAX;
+				parent = NULL;
+			}
 			AStarPlannerNode(Util::Point _point, double _g, double _f, AStarPlannerNode* _parent)
 			{
 				f = _f;
@@ -82,7 +90,7 @@ namespace SteerLib
 				@function getPointFromGridIndex accepts the grid index as input and returns an Util::Point corresponding to the center of that cell.
 			*/
 			Util::Point getPointFromGridIndex(int id);
-
+			std::vector<AStarPlannerNode> getNeighbours(AStarPlannerNode currentNode, AStarPlannerNode goalNode);
 			/*
 				@function computePath
 				DO NOT CHANGE THE DEFINITION OF THIS FUNCTION

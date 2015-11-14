@@ -122,6 +122,18 @@ void SearchAgent::updateAI(float timeStamp, float dt, unsigned int frameNumber)
 {
 	Util::AutomaticFunctionProfiler profileThisFunction( &SearchAIGlobals::gPhaseProfilers->aiProfiler );
 
+	// fix? on clean up from sakai
+	//------------------------------
+	Util::AxisAlignedBox oldBounds(__position.x - _radius, __position.x + _radius, 0.0f, 0.0f, __position.z - _radius, __position.z + _radius);
+
+        __position = _goalQueue.front().targetLocation;
+        std::cout<<"Waypoint: "<< __position;
+        _goalQueue.pop();
+        last_waypoint++;
+
+        Util::AxisAlignedBox newBounds(__position.x - _radius, __position.x + _radius, 0.0f, 0.0f, __position.z - _radius, __position.z + _radius);
+        gSpatialDatabase->updateObject( this, oldBounds, newBounds);
+	//------------------------------
 	
 	double steps = (DURATION/(double)__path.size());
 	if(timeStamp*dt > last_waypoint*steps)
