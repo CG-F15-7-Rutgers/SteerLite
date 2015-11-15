@@ -22,6 +22,7 @@
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
 #define EUCLEDIAN 1 // 0 for Manhattan distance or 1 for Eucledian
+#define WEIGHT 8 // weight used in heuristic fuction
 
 namespace SteerLib
 {
@@ -157,7 +158,7 @@ namespace SteerLib
 				nextPoint = getPointFromGridIndex(index);
 				node.point = nextPoint;
 				node.g = currentNode.g + 1;
-				node.f = node.g + (8*estimateCost(node, goalNode));
+				node.f = node.g + (WEIGHT*estimateCost(node, goalNode));
 				node.parentx = currentNode.point.x;
 				node.parentz = currentNode.point.z;
 				neighbours.push_back(node);
@@ -264,7 +265,7 @@ namespace SteerLib
 		}
 		
 		}
-		std::cout << "\n No path";
+		std::cout << "\n No path found";
 
 		return false;
 	}
