@@ -18,11 +18,13 @@
 
 #define COLLISION_COST  1000
 #define GRID_STEP  1
-#define OBSTACLE_CLEARANCE 1
+#define OBSTACLE_CLEARANCE 0
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))
-#define EUCLEDIAN 1 // 0 for Manhattan distance or 1 for Eucledian
-#define WEIGHT 8 // weight used in heuristic fuction
+#define WEIGHT 1
+#define COST 1
+#define heuristic(X,Y) euclideanHeuristic(X, Y)
+#define FAVOR_LARGE true
 
 namespace SteerLib
 {
@@ -69,134 +71,109 @@ namespace SteerLib
 		return p;
 	}
 
-	double estimateCost(AStarPlannerNode agentStart, AStarPlannerNode agentGoal)
+	double AStarPlanner::manhattanHeuristic(int start, int end)
 	{
-		double cost;
-		if (EUCLEDIAN)
-		{
-			cost = sqrt(pow((agentStart.point.x-agentGoal.point.x),2)+pow((agentStart.point.z-agentGoal.point.z),2));
-		}
-		else
-		{
-			cost = abs(agentStart.point.x - agentGoal.point.x) + abs(agentStart.point.z - agentGoal.point.z);
-		}
-		return cost;
+		unsigned int startx, startz, endx, endz;
+		gSpatialDatabase->getGridCoordinatesFromIndex(start, startx, startz);
+		gSpatialDatabase->getGridCoordinatesFromIndex(end, endx, endz);
+		return AstarWeight*((abs((double)startx - endx) + abs((double)startz - endz)));
 	}
-	
-	AStarPlannerNode findLowFScore(std::vector<AStarPlannerNode> &open, int &index)
+
+	double AStarPlanner::euclideanHeuristic(int start, int end) 
 	{
-		index = INT_MAX;
-		AStarPlannerNode node;
-		std::vector<AStarPlannerNode>::iterator itr = open.begin();
-		for (int i=0; itr != open.end(); itr++,i++)
+		unsigned int startx, startz, endx, endz;
+		gSpatialDatabase->getGridCoordinatesFromIndex(start, startx, startz);
+		gSpatialDatabase->getGridCoordinatesFromIndex(end, endx, endz);
+		return AstarWeight*((double)sqrt((startx - endx)*(startx - endx) + (startz - endz)*(startz - endz)));
+	}
+
+	void AStarPlanner::neighbors(int current, int goal, std::set<int>& open_set, std::set<int> closed_set, std::map<int, double>& g_score, std::map<int, double>& f_score, std::map<int, int>& came_from)
+	{
+		unsigned int x, z;
+		gSpatialDatabase->getGridCoordinatesFromIndex(current, x, z);
+		for (int i = MAX(x - 1, 0); i<MIN(x + 2, gSpatialDatabase->getNumCellsX()); i += GRID_STEP) 
 		{
-			if (node > *itr) {
-				index = i;
-				node = *itr;
-			}
-			if (node.f == (*itr).f)
+			for (int j = MAX(z - 1, 0); j<MIN(z + 2, gSpatialDatabase->getNumCellsZ()); j += GRID_STEP) 
 			{
-				if (node.g < (*itr).g)
+				int neighbor = gSpatialDatabase->getCellIndexFromGridCoords(i, j);
+				if (canBeTraversed(neighbor) && closed_set.count(neighbor) == 0) 
 				{
-					node = *itr;
-					index = i;
+					double tentative_g;
+					if ((i == x) || (j == z)) 
+						tentative_g = g_score[current] + (gSpatialDatabase->getTraversalCost(neighbor));
+					else 
+						tentative_g = g_score[current] + COST*gSpatialDatabase->getTraversalCost(neighbor);
+
+					if (tentative_g < g_score[neighbor])
+					{
+						g_score[neighbor] = tentative_g;
+						f_score[neighbor] = g_score[neighbor] + heuristic(neighbor, goal);
+						if (open_set.count(neighbor) == 1)
+							open_set.erase(open_set.find(neighbor));
+
+						open_set.insert(neighbor);
+						came_from[neighbor] = current;
+					}
 				}
 			}
-
 		}
-		return node;
 	}
 
-	std::vector<AStarPlannerNode> AStarPlanner::getNeighbours(AStarPlannerNode currentNode, AStarPlannerNode goalNode)
+	bool AStarPlanner::reconstruct(std::vector<Util::Point>& agent_path, int current, int start, std::map<int, int>& came_from) 
 	{
-		int currentIndex = gSpatialDatabase->getCellIndexFromLocation(currentNode.point);
-		std::vector<AStarPlannerNode> neighbours;
-		unsigned int currentPointx,currentPointz; 
-		gSpatialDatabase->getGridCoordinatesFromIndex(currentIndex, currentPointx, currentPointz);
-		Util::Point currentPoint(currentPointx, 0, currentPointz);
-		Util::Point nextPoint(0,0,0);
-		for (int i = 0; i < 8; i++)
+		int temp = current;
+		std::vector<Util::Point> path;
+		path.push_back(getPointFromGridIndex(temp));
+		while (temp != start) 
 		{
-			nextPoint = currentPoint;
+			temp = came_from[temp];
+			path.push_back(getPointFromGridIndex(temp));
+		}
+		for (int i = path.size() - 1; i >= 0; --i) 
+			agent_path.push_back(path.at(i));
 
-			switch (i)
+		return true;
+	}
+
+	int AStarPlanner::getCurrent(std::set<int> open_set, std::map<int, double> g_score, std::map<int, double> f_score) 
+	{
+		std::set<int>::iterator iter;
+		double temp = INFINITY;
+		for (std::set<int>::iterator i = open_set.begin(); i != open_set.end(); ++i) 
+		{
+			if (f_score[(*i)] == temp) 
 			{
-				case 0:
-					nextPoint.x++;
-					break;
-				case 1:
-					nextPoint.x--;
-					break;
-				case 2:
-					nextPoint.z++;
-					break;
-				case 3:
-					nextPoint.z--;
-					break;
-				case 4:
-					nextPoint.x++;
-					nextPoint.z++;
-					break;
-				case 5:
-					nextPoint.x++;
-					nextPoint.z--;
-					break;
-				case 6:
-					nextPoint.x--;
-					nextPoint.z--;
-					break;
-				case 7:
-					nextPoint.x--;
-					nextPoint.z++;
-					break;
+				if (FAVOR_LARGE) 
+				{
+					if (g_score[(*iter)] < g_score[(*i)]) 
+						iter = i;
+				}
+				else {
+					if (g_score[(*iter)] > g_score[(*i)]) 
+						iter = i;
+				}
+			}
+			else if (f_score[(*i)] < temp) 
+			{
+				temp = f_score[(*i)];
+				iter = i;
 			}
 
-			int index = gSpatialDatabase->getCellIndexFromGridCoords(nextPoint.x, nextPoint.z);
-			if (canBeTraversed(index))
+		}
+		return (*iter);
+	}
+
+	void AStarPlanner::init_score(std::map<int, double>& g_score, std::map<int, double>& f_score, SteerLib::GridDatabase2D * _gSpatialDatabase)
+	{
+		gSpatialDatabase = _gSpatialDatabase;
+		for (int i = 0; i < gSpatialDatabase->getNumCellsX(); ++i) 
+		{
+			for (int j = 0; j < gSpatialDatabase->getNumCellsZ(); ++j)
 			{
-				AStarPlannerNode node;
-				nextPoint = getPointFromGridIndex(index);
-				node.point = nextPoint;
-				node.g = currentNode.g + 1;
-				node.f = node.g + (WEIGHT*estimateCost(node, goalNode));
-				node.parentx = currentNode.point.x;
-				node.parentz = currentNode.point.z;
-				neighbours.push_back(node);
+				int index = gSpatialDatabase->getCellIndexFromGridCoords(i, j);
+				g_score[index] = INFINITY;
+				f_score[index] = INFINITY;
 			}
-		
-		}
-	
-		return neighbours;
-	}
-
-	bool closedList(AStarPlannerNode nodeToCheck, std::vector<AStarPlannerNode> closedNodes)
-	{
-		for (std::vector<AStarPlannerNode>::iterator itr = closedNodes.begin(); itr != closedNodes.end(); itr++)
-		{
-			if (nodeToCheck == (*itr))
-				return true;
-		}
-		return false;
-	}
-
-	int openList(AStarPlannerNode nodeToCheck, std::vector<AStarPlannerNode> closedNodes)
-	{
-		int i = 0;
-		for (std::vector<AStarPlannerNode>::iterator itr = closedNodes.begin(); itr != closedNodes.end(); itr++,i++)
-		{
-			if (nodeToCheck == (*itr))
-				return i;
-		}
-		i = -1;
-		return i;
-	}
-
-	AStarPlannerNode findClosedNodes(std::vector<AStarPlannerNode> closedNodes, AStarPlannerNode nodeToFind)
-	{
-		for (std::vector<AStarPlannerNode>::iterator itr = closedNodes.begin(); itr != closedNodes.end(); itr++)
-		{
-			if ((*itr).point.x == nodeToFind.parentx && (*itr).point.z == nodeToFind.parentz)
-				return (*itr);
 		}
 	}
 
@@ -204,68 +181,34 @@ namespace SteerLib
 	{
 		gSpatialDatabase = _gSpatialDatabase;
 
-		int startIndex =_gSpatialDatabase->getCellIndexFromLocation(start);
-		start = getPointFromGridIndex(startIndex);
-		AStarPlannerNode Astart(start, 0, 0, NULL);
-		int goalIndex = _gSpatialDatabase->getCellIndexFromLocation(goal);
-		goal = getPointFromGridIndex(goalIndex);
-		AStarPlannerNode Agoal(goal,DBL_MAX,DBL_MAX,NULL);
-		std::vector<AStarPlannerNode> open;
-		std::vector<AStarPlannerNode> closed;
-		Astart.g = 0;
-		Astart.f = Astart.g + estimateCost(Astart,Agoal);
-		open.emplace_back(Astart);
-		int index;
-		std::vector<AStarPlannerNode> neighbours;
-		AStarPlannerNode current;
-		while (!open.empty())
-		{
-			neighbours.clear();
-		current = findLowFScore(open,index);
-		if (current.point == Agoal.point)
-		{   			
-			std::cout << "\nPath length:" << current.g;
+		std::set<int> open_set;
+		std::set<int> closed_set;
 
-			while (!(current.parentx == 0 && current.parentz==0))
-			{
-				agent_path.push_back(current.point);
-				current = findClosedNodes(closed, current);
-			}
-			std::reverse(agent_path.begin(),agent_path.end());
-			std::cout << "\n\tNumber of nodes in Closed List: " << closed.size();
-			return true;
-		}
-		open.erase(open.begin()+index);
-		
-		closed.push_back(current);
+		std::map<int, double> g_score;
+		std::map<int, double> f_score;
+		std::map<int, int> came_from;
+		init_score(g_score, f_score, gSpatialDatabase);
 
-		neighbours = getNeighbours(current,Agoal);
-		double tentative_gscore=0;
-		int i; int z = 0;
-		for (std::vector<AStarPlannerNode>::iterator itr = neighbours.begin(); itr != neighbours.end(); itr++,z++)
+		int _start = gSpatialDatabase->getCellIndexFromLocation(start);
+		int _goal = gSpatialDatabase->getCellIndexFromLocation(goal);
+		g_score[_start] = 0.0;
+		f_score[_start] = g_score[_start] + heuristic(_start, _goal);
+		open_set.insert(_start);
+
+		while (!open_set.empty()) 
 		{
-			if (closedList(*itr, closed))
-				continue;
-			tentative_gscore = current.g + 1;
-			i = openList(*itr, open);
-			if (i != -1)
+			int current = getCurrent(open_set, g_score, f_score);
+			closed_set.insert(current);
+			open_set.erase(open_set.find(current));
+
+			if (current == _goal) 
 			{
-				if (tentative_gscore < open.at(i).g)
-				{   
-					open.at(i).g = tentative_gscore;
-					open.at(i).parentx = current.point.x;
-					open.at(i).parentz = current.point.z;
-					open.at(i).f = open.at(i).g + estimateCost(open.at(i),Agoal);
-				}
+				//std::cout << "\nExpanded Nodes: " << closed_set.size();
+				return reconstruct(agent_path, current, _start, came_from);
 			}
-			else
-			{
-				open.push_back(neighbours.at(z));
-			}
+
+			neighbors(current, _goal, open_set, closed_set, g_score, f_score, came_from);
 		}
-		
-		}
-		std::cout << "\n No path found";
 
 		return false;
 	}

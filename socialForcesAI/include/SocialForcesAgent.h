@@ -10,23 +10,11 @@
 #define __SocialForces_AGENT__
 
 
-/// @file SocialForcesAgent.h
-/// @brief Declares the SimpleAgent class.
-
-
 #include <queue>
 #include <list>
 #include "SteerLib.h"
-// #include "SimpleAgent.h"
-// #include "SocialForcesAIModule.h"
 #include "SocialForces_Parameters.h"
-
-
-/**
- * @brief Social Forces Agent stuff
- *
- *
- */
+#include "../../steerlib/include/planning/AStarPlanner.h"
 
 
 // #define DRAW_ANNOTATIONS 1
@@ -108,6 +96,8 @@ class SocialForcesAgent : public SteerLib::AgentInterface
         bool reachedCurrentWaypoint();
         void updateMidTermPath();
         bool hasLineOfSightTo(Util::Point point);
+		bool astar = false;
+		SteerLib::AStarPlanner planner;
 
 
         void calcNextStep(float dt);
