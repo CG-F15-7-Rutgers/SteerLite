@@ -13,7 +13,6 @@
 #include <set>
 #include <map>
 #include "SteerLib.h"
-#include <limits.h>
 
 namespace SteerLib
 {
@@ -35,13 +34,6 @@ namespace SteerLib
 			double g;
 			Util::Point point;
 			AStarPlannerNode* parent;
-			float parentx=0 , parentz=0;
-			AStarPlannerNode()
-			{
-				f = DBL_MAX;
-				g = DBL_MAX;
-				parent = NULL;
-			}
 			AStarPlannerNode(Util::Point _point, double _g, double _f, AStarPlannerNode* _parent)
 			{
 				f = _f;
@@ -70,6 +62,7 @@ namespace SteerLib
 		public:
 			AStarPlanner();
 			~AStarPlanner();
+			int AstarWeight = 1;
 			// NOTE: There are four indices that need to be disambiguated
 			// -- Util::Points in 3D space(with Y=0)
 			// -- (double X, double Z) Points with the X and Z coordinates of the actual points
@@ -90,7 +83,9 @@ namespace SteerLib
 				@function getPointFromGridIndex accepts the grid index as input and returns an Util::Point corresponding to the center of that cell.
 			*/
 			Util::Point getPointFromGridIndex(int id);
-			std::vector<AStarPlannerNode> getNeighbours(AStarPlannerNode currentNode, AStarPlannerNode goalNode);
+			double heuristic(Util::Point a, Util::Point b);
+
+			std::vector<Util::Point> reconstruct(AStarPlannerNode _Node, Util::Point start);
 			/*
 				@function computePath
 				DO NOT CHANGE THE DEFINITION OF THIS FUNCTION
@@ -104,9 +99,21 @@ namespace SteerLib
 			*/
 
 			bool computePath(std::vector<Util::Point>& agent_path, Util::Point start, Util::Point goal, SteerLib::GridDatabase2D * _gSpatialDatabase, bool append_to_path = false);
-		private:
-			SteerLib::GridDatabase2D * gSpatialDatabase;
+	private:
+		SteerLib::GridDatabase2D * gSpatialDatabase;
+		//Heuristic function from startIndex to endIndex
+		double euclideanHeuristic(int start, int end);
+		double manhattanHeuristic(int start, int end);
+		//Expands at currentNode, adding eligible neighbors to openset and modifying f,g scores and parent node
+		void neighbors(int current, int goal, std::set<int>& open_set, std::set<int> closed_set, std::map<int, double>& g_score, std::map<int, double>& f_score, std::map<int, int>& came_from);
+		//Adds found path to agent_path
+		bool reconstruct(std::vector<Util::Point>& agent_path, int current, int start, std::map<int, int>& came_from);
+		//Finds node with lowest fscore in openset
+		int getCurrent(std::set<int> open_set, std::map<int, double> g_score, std::map<int, double> f_score);
+		void init_score(std::map<int, double>& g_score, std::map<int, double>& f_score, SteerLib::GridDatabase2D * _gSpatialDatabase);
 	};
+
+
 
 
 }
