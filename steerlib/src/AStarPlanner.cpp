@@ -203,7 +203,7 @@ namespace SteerLib
 
 			if (current == _goal) 
 			{
-				//std::cout << "\nExpanded Nodes: " << closed_set.size();
+				std::cout << "\nExpanded Nodes: " << closed_set.size();
 				return reconstruct(agent_path, current, _start, came_from);
 			}
 
